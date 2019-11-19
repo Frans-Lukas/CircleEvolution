@@ -12,7 +12,6 @@ class GeneticCircles:
         self.mut = mutation_amount
         self.curr_gen = []
 
-
     def evaluate_generation(self, generation):
         score = 0
         for circle in generation:
@@ -20,7 +19,7 @@ class GeneticCircles:
                 if circle == sub_circle:
                     continue
                 else:
-                    i_amnt = self.intersecting_amount(circle, sub_circle)
+                    i_amnt = circle.intersecting_amount(sub_circle)
                     if i_amnt > 0:
                         score += i_amnt
         return score
@@ -30,7 +29,7 @@ class GeneticCircles:
             for sub_circle in circles:
                 if circle == sub_circle:
                     continue
-                elif self.intersecting_amount(circle, sub_circle) > 0:
+                elif circle.intersecting_amount(sub_circle) > 0:
                     circle.lap = True
 
     def initial_generation(self):
@@ -65,11 +64,11 @@ class Circle:
 
     @property
     def magnitude(self):
-        return math.sqrt(self.x**2 + self.y**2)
+        return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def convert_to_unit_vector(self):
-        self.x = self.x/self.magnitude
-        self.y = self.y/self.magnitude
+        self.x = self.x / self.magnitude
+        self.y = self.y / self.magnitude
 
     def distance(self, target):
         return math.sqrt((self.x - target.x) ** 2 + (self.y - target.y) ** 2)
@@ -79,6 +78,12 @@ class Circle:
         return d < (self.r + target.r)
 
     def intersecting_amount(self, target):
+
+        uv_to_target = self.find_unit_vector_to_circle(target)
+        uv_from_target = target.find_unit_vector_to_circle(self)
+
+
+
         d = self.distance(target)
 
         if d > (self.r + target.r):
@@ -92,4 +97,3 @@ class Circle:
         uv = Circle(x, y, 1)
         uv.convert_to_unit_vector()
         return uv
-
