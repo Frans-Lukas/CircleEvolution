@@ -12,19 +12,6 @@ class GeneticCircles:
         self.mut = mutation_amount
         self.curr_gen = []
 
-    def distance(self, c1, c2):
-        return math.sqrt((c1.x - c2.x) ** 2 + (c1.y - c2.y) ** 2)
-
-    def intersecting(self, c1, c2):
-        d = self.distance(c1, c2)
-        return d < (c1.r + c2.r)
-
-    def intersecting_amount(self, c1, c2):
-        d = self.distance(c1, c2)
-        if d > (c1.r + c2.r):
-            return 0
-        else:
-            return abs(d - c1.r)
 
     def evaluate_generation(self, generation):
         score = 0
@@ -75,3 +62,34 @@ class Circle:
         self.y = y
         self.r = r
         self.lap = False
+
+    @property
+    def magnitude(self):
+        return math.sqrt(self.x**2 + self.y**2)
+
+    def convert_to_unit_vector(self):
+        self.x = self.x/self.magnitude
+        self.y = self.y/self.magnitude
+
+    def distance(self, target):
+        return math.sqrt((self.x - target.x) ** 2 + (self.y - target.y) ** 2)
+
+    def intersecting(self, target):
+        d = self.distance(target)
+        return d < (self.r + target.r)
+
+    def intersecting_amount(self, target):
+        d = self.distance(target)
+
+        if d > (self.r + target.r):
+            return 0
+        else:
+            return abs(d - self.r)
+
+    def find_unit_vector_to_circle(self, target):
+        x = self.x - target.x
+        y = self.y - target.y
+        uv = Circle(x, y, 1)
+        uv.convert_to_unit_vector()
+        return uv
+
