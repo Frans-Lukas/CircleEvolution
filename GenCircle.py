@@ -1,5 +1,7 @@
+import copy
 import math
 import random
+from itertools import chain
 
 
 class GeneticCircles:
@@ -38,15 +40,44 @@ class GeneticCircles:
             self.curr_gen.append(
                 [Circle(random.randint(0, self.w), random.randint(0, self.h), self.r) for i in range(self.num_circ)])
 
-    def get_top_circles(self):
-        index = 0
-        min_val = 100000
-        for i in range(len(self.curr_gen)):
+    def new_generation(self):
+        # Selection step
+        top_circles = self.get_top_circles(2)
+        print(self.evaluate_generation(top_circles[0]))
+
+        # Reproduction step
+        new_generation_base = self.reproduce_top_two(top_circles)
+        self.create_generation(new_generation_base)
+
+    def create_generation(self, new_generation_base):
+        self.curr_gen.clear()
+        for i in range(self.gen_size):
+            mutated_circles = copy.deepcopy(new_generation_base)
+            for new_circle in mutated_circles:
+                # Mutation step
+                if random.randint(0, 100) < self.mut:
+                    new_circle.x = random.randint(0, self.w)
+                    new_circle.y = random.randint(0, self.h)
+                new_circle.lap = False
+            self.curr_gen.append(mutated_circles)
+
+    def reproduce_top_two(self, top_circles):
+        first_half = math.floor(len(top_circles[0]) / 2)
+        second_half = math.ceil(len(top_circles[1]) / 2)
+        return [circle for circle in chain((circle for circle in top_circles[0][first_half:]),
+                                           (circle for circle in top_circles[1][:second_half]))]
+
+    def get_top_circles(self, num):
+        if num >= len(self.curr_gen):
+            raise ValueError("num can't be bigger than length of generation.")
+        min_vals = [[i, self.evaluate_generation(self.curr_gen[i])] for i in range(num)]
+        for i in range(1, len(self.curr_gen)):
             result = self.evaluate_generation(self.curr_gen[i])
-            if result < min_val:
-                min_val = result
-                index = i
-        return self.curr_gen[index]
+            if result < min_vals[0][1]:
+                min_vals.append([i, result])
+                min_vals.sort(key=lambda x: x[1])
+                min_vals = min_vals[:num]
+        return [self.curr_gen[min_val[0]] for min_val in min_vals]
 
     def breed(self):
         pass
@@ -67,8 +98,12 @@ class Circle:
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def convert_to_unit_vector(self):
-        self.x = self.x / self.magnitude
-        self.y = self.y / self.magnitude
+        if not self.magnitude == 0:
+            self.x = self.x / self.magnitude
+            self.y = self.y / self.magnitude
+        else:
+            self.x = 0
+            self.y = 0
 
     def distance(self, target):
         return math.sqrt((self.x - target.x) ** 2 + (self.y - target.y) ** 2)
@@ -77,19 +112,20 @@ class Circle:
         d = self.distance(target)
         return d < (self.r + target.r)
 
+    def circle_edge_to(self, unit_direction):
+        return Circle(unit_direction.x * self.r, unit_direction.y * self.r, 0)
+
     def intersecting_amount(self, target):
 
-        uv_to_target = self.find_unit_vector_to_circle(target)
-        uv_from_target = target.find_unit_vector_to_circle(self)
-
-
-
         d = self.distance(target)
-
         if d > (self.r + target.r):
             return 0
         else:
-            return abs(d - self.r)
+            uv_to_target = self.find_unit_vector_to_circle(target)
+            uv_from_target = target.find_unit_vector_to_circle(self)
+            circle_edge_to_target = uv_to_target.circle_edge_to(uv_to_target)
+            circle_edge_from_target = uv_from_target.circle_edge_to(uv_from_target)
+            return circle_edge_to_target.distance(circle_edge_from_target)
 
     def find_unit_vector_to_circle(self, target):
         x = self.x - target.x
